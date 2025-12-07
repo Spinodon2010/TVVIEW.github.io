@@ -1,50 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="static/styles.css" rel="stylesheet" type="text/css">
-    <title>Computer Vision on The Web</title>
-  </head>
-  <body>
-    
-    <img class="feed" src="">
-    <img class="feed" src="">
-    <script defer>
+<html>
+<head>
+  <title>Client</title>
+</head>
+<body>
+  <h2>Camera Feed Sending...</h2>
+  
+  <!-- Video stream from webcam -->
+  <video id="video" width="320" height="240" autoplay></video>
+  
+  <!-- Button to capture -->
+  
+  <!-- Canvas to draw the captured frame -->
+  <canvas id="canvas" width="320" height="240"></canvas>
+  
+  <script defer>
+    const socket = new WebSocket("ws://192.168.1.216:8000");
 
-        let images = document.getElementsByClassName("feed");
-
-images[0].style.width = window.innerWidth + "px";
-images[0].style.height = window.innerHeight + "px";
-images[0].style.position = "absolute";
-images[0].style.zIndex = 2;
-images[1].style.zIndex = 1;
-images[1].style.position = "absolute";
-images[1].style.width = window.innerWidth + "px";
-images[1].style.height = window.innerHeight + "px";
-
-const socket = new WebSocket("ws://192.168.1.216:8080");
 
 socket.onopen = () => {
-    socket.send(JSON.stringify({type:"prompt --> next frame"}));
+    socket.send(capture());
 };
 
 socket.onmessage = (event) => {
 
-    const blob = new Blob([event.data], { type: "image/png" });
-    const url = URL.createObjectURL(blob);
+    // const blob = new Blob([event.data], { type: "image/png" });
+    // const url = URL.createObjectURL(blob);
 
-    console.log(event.data);
+    // images[1].src = images[0].src;
+    // images[0].src = url;
 
-    images[1].src = images[0].src;
-    images[0].src = url;
-
-    setTimeout(() => {
-        socket.send(JSON.stringify({type:"prompt --> next frame"}));
-    }, 1000/32)
+    // setTimeout(() => {
+    //     socket.send(capture);
+    // }, 1000/32)
 
 
-    console.log("Buffer recieved");
+    // console.log("Buffer recieved");
+    socket.send(capture());
 
 };
 
@@ -52,6 +44,36 @@ socket.onclose = () => {
   
 };
 
-    </script>
-  </body>
+
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const snapBtn = document.getElementById('snap');
+const context = canvas.getContext('2d');
+
+// Ask for camera access
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
+    video.srcObject = stream; // Show webcam stream in <video>
+  })
+  .catch(err => {
+    console.error("Error accessing camera:", err);
+  });
+
+// Capture frame when button is clicked
+function capture() {
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+  // convert to binary
+    canvas.toBlob((blob) => {
+    blob.arrayBuffer().then(buffer => {
+      socket.send(buffer); // send raw binary
+    });
+  }, "image/png");
+
+
+    return imageData;
+}
+
+  </script>
+</body>
 </html>
