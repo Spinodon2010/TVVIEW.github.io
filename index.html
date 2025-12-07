@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="static/styles.css" rel="stylesheet" type="text/css">
+    <title>Computer Vision on The Web</title>
+  </head>
+  <body>
+    
+    <img class="feed" src="">
+    <img class="feed" src="">
+    <script defer>
+
+        let images = document.getElementsByClassName("feed");
+
+images[0].style.width = window.innerWidth + "px";
+images[0].style.height = window.innerHeight + "px";
+images[0].style.position = "absolute";
+images[0].style.zIndex = 2;
+images[1].style.zIndex = 1;
+images[1].style.position = "absolute";
+images[1].style.width = window.innerWidth + "px";
+images[1].style.height = window.innerHeight + "px";
+
+const socket = new WebSocket("ws://192.168.1.216:8080");
+
+socket.onopen = () => {
+    socket.send(JSON.stringify({type:"prompt --> next frame"}));
+};
+
+socket.onmessage = (event) => {
+
+    const blob = new Blob([event.data], { type: "image/png" });
+    const url = URL.createObjectURL(blob);
+
+    console.log(event.data);
+
+    images[1].src = images[0].src;
+    images[0].src = url;
+
+    setTimeout(() => {
+        socket.send(JSON.stringify({type:"prompt --> next frame"}));
+    }, 1000/32)
+
+
+    console.log("Buffer recieved");
+
+};
+
+socket.onclose = () => {
+  
+};
+
+    </script>
+  </body>
+</html>
